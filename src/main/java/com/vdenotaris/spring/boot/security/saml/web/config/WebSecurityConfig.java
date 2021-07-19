@@ -16,12 +16,7 @@
 
 package com.vdenotaris.spring.boot.security.saml.web.config;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
+import java.util.*;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -31,12 +26,15 @@ import org.opensaml.saml2.metadata.provider.MetadataProvider;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.xml.parse.ParserPool;
 import org.opensaml.xml.parse.StaticBasicParserPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -102,8 +100,12 @@ import com.vdenotaris.spring.boot.security.saml.web.core.SAMLUserDetailsServiceI
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements InitializingBean, DisposableBean {
- 
-	private Timer backgroundTaskTimer;
+
+    private static final Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
+    @Autowired
+    private Environment env;
+
+    private Timer backgroundTaskTimer;
 	private MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager;
 
 	public void init() {
@@ -258,7 +260,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements I
 	@Qualifier("idp-ssocircle")
 	public ExtendedMetadataDelegate ssoCircleExtendedMetadataProvider()
 			throws MetadataProviderException {
-		String idpSSOCircleMetadataURL = "https://idp.ssocircle.com/meta-idp.xml";
+        logger.debug("★idp.metadata: " + env.getProperty("idp.metadata"));
+		String idpSSOCircleMetadataURL = env.getProperty("idp.metadata");
 		HTTPMetadataProvider httpMetadataProvider = new HTTPMetadataProvider(
 				this.backgroundTaskTimer, httpClient(), idpSSOCircleMetadataURL);
 		httpMetadataProvider.setParserPool(parserPool());
@@ -285,7 +288,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements I
     @Bean
     public MetadataGenerator metadataGenerator() {
         MetadataGenerator metadataGenerator = new MetadataGenerator();
-        metadataGenerator.setEntityId("com:vdenotaris:spring:sp");
+        logger.debug("★sp.entityid: " + env.getProperty("sp.entityid"));
+        metadataGenerator.setEntityId(env.getProperty("sp.entityid"));
         metadataGenerator.setExtendedMetadata(extendedMetadata());
         metadataGenerator.setIncludeDiscoveryExtension(false);
         metadataGenerator.setKeyManager(keyManager()); 
@@ -443,11 +447,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements I
                 samlLogoutFilter()));
         chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher("/saml/metadata/**"),
                 metadataDisplayFilter()));
-        chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher("/saml/SSO/**"),
+        logger.debug("★sp.acs: " + env.getProperty("sp.acs"));
+        chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher(env.getProperty("sp.acs")),
                 samlWebSSOProcessingFilter()));
         chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher("/saml/SSOHoK/**"),
                 samlWebSSOHoKProcessingFilter()));
-        chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher("/saml/SingleLogout/**"),
+        logger.debug("★sp.slo: " + env.getProperty("sp.slo"));
+        chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher(env.getProperty("sp.slo")),
                 samlLogoutProcessingFilter()));
         chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher("/saml/discovery/**"),
                 samlIDPDiscovery()));

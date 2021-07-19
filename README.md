@@ -13,6 +13,8 @@
 <img src="https://i.ibb.co/CKbFBzH/logo-small.png" align="right" />
 
 ## Project description
+z....y   | password: icDK73.n
+t....y   | password: a........j
 
 This project represents a sample implementation of a **SAML 2.0 Service Provider**, completely built on **Spring Framework**. In particular, it shows how to develop a web solution devised for Federated Authentication, by integrating **Spring Boot** and **Spring Security SAML**. The configuration has been completely defined using *Java annotations* (no XML).
 
